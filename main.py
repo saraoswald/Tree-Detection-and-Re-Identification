@@ -54,13 +54,61 @@ def drawMatches(img1, kp1, img2, kp2, matches):
         cv2.line(out, (int(x1),int(y1)), (int(x2)+cols1,int(y2)), (255, 0, 0), 1)
 
 
-    # Show the image
+    # # Show the image
     cv2.imshow('Matched Features', out)
     cv2.waitKey(0)
     cv2.destroyWindow('Matched Features')
 
     # Also return the image if you'd like a copy
     return out
+
+
+"""
+Kmeans clustering
+"""
+# Z = img1.reshape((-1,3))
+# # convert to np.float32
+# Z = np.float32(Z)
+#
+# # define criteria, number of clusters(K) and apply kmeans()
+# criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+# K = 2
+# ret,label,center=cv2.kmeans(Z,K,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
+# center = np.uint8(center)
+# res = center[label.flatten()]
+# res2 = res.reshape((img1.shape))
+#
+# cv2.namedWindow("", cv2.WINDOW_NORMAL)
+# cv2.imwrite('clustered.png',res2)
+
+
+"""
+Image Segmentation
+"""
+gray = img1
+ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+
+# noise removal
+kernel = np.ones((3,3),np.uint8)
+opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel, iterations = 3)
+
+# sure background area
+sure_bg = cv2.dilate(opening,kernel,iterations=3)
+
+# Finding sure foreground area
+dist_transform = cv2.distanceTransform(opening,cv2.cv.CV_DIST_L2,5)
+ret, sure_fg = cv2.threshold(dist_transform,0.7*dist_transform.max(),255,0)
+
+# Finding unknown region
+sure_fg = np.uint8(sure_fg)
+unknown = cv2.subtract(sure_bg,sure_fg)
+
+cv2.imwrite('sure_bg.png',sure_bg)
+cv2.imwrite('sure_fg.png',sure_fg)
+
+
+
+
 
 # Initiate SIFT detector
 orb = cv2.ORB()
@@ -79,6 +127,6 @@ matches = bf.match(des1,des2)
 matches = sorted(matches, key = lambda x:x.distance)
 
 # Draw first 10 matches.
-img3 = drawMatches(img1,kp1,img2,kp2,matches[:10])
-
-plt.imshow(img3),plt.show()
+img3 = drawMatches(img1,kp1,img2,kp2,matches[:20])
+cv2.imwrite('matches.png',img3)
+# plt.imshow(img3),plt.show()
