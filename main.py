@@ -4,8 +4,8 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 
-img1 = cv2.imread('tree2.jpg',0)          # queryImage
-img2 = cv2.imread('tree3.jpg',0) # trainImage
+img1 = cv2.imread('trunk.jpg',0)          # queryImage
+img2 = cv2.imread('tree2.jpg',0) # trainImage
 
 
 """
@@ -55,9 +55,9 @@ def drawMatches(img1, kp1, img2, kp2, matches):
 
 
     # # Show the image
-    cv2.imshow('Matched Features', out)
-    cv2.waitKey(0)
-    cv2.destroyWindow('Matched Features')
+    # cv2.imshow('Matched Features', out)
+    # cv2.waitKey(0)
+    # cv2.destroyWindow('Matched Features')
 
     # Also return the image if you'd like a copy
     return out
@@ -77,36 +77,81 @@ Kmeans clustering
 # center = np.uint8(center)
 # res = center[label.flatten()]
 # res2 = res.reshape((img1.shape))
+# gray = img1
+# ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+# # noise removal
+# kernel = np.ones((3,3),np.uint8)
+# opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel, iterations = 3)
 #
-# cv2.namedWindow("", cv2.WINDOW_NORMAL)
 # cv2.imwrite('clustered.png',res2)
 
 
 """
 Image Segmentation
 """
-gray = img1
-ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+# gray = cv2.imread('treetrunk.jpg',0)
+# ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+#
+# # noise removal
+# kernel = np.ones((3,3),np.uint8)
+# opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel, iterations = 3)
+#
+# # sure background area
+# sure_bg = cv2.dilate(opening,kernel,iterations=3)
+#
+# # Finding sure foreground area
+# dist_transform = cv2.distanceTransform(opening,cv2.cv.CV_DIST_L2,5)
+# ret, sure_fg = cv2.threshold(dist_transform,0.7*dist_transform.max(),255,0)
+#
+# # Finding unknown region
+# sure_fg = np.uint8(sure_fg)
+# unknown = cv2.subtract(sure_bg,sure_fg)
+#
+# cv2.imwrite('sure_bg.png',sure_bg)
+# cv2.imwrite('sure_fg.png',sure_fg)
 
-# noise removal
-kernel = np.ones((3,3),np.uint8)
-opening = cv2.morphologyEx(thresh,cv2.MORPH_OPEN,kernel, iterations = 3)
-
-# sure background area
-sure_bg = cv2.dilate(opening,kernel,iterations=3)
-
-# Finding sure foreground area
-dist_transform = cv2.distanceTransform(opening,cv2.cv.CV_DIST_L2,5)
-ret, sure_fg = cv2.threshold(dist_transform,0.7*dist_transform.max(),255,0)
-
-# Finding unknown region
-sure_fg = np.uint8(sure_fg)
-unknown = cv2.subtract(sure_bg,sure_fg)
-
-cv2.imwrite('sure_bg.png',sure_bg)
-cv2.imwrite('sure_fg.png',sure_fg)
 
 
+# """
+# find contours
+# """
+#
+# im = cv2.imread('clustered.png')
+# imgray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
+# ret,thresh = cv2.threshold(imgray,127,255,0)
+# contours, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
+# cv2.drawContours(im,contours,-1,(0,255,0),0)
+# cv2.imwrite("contours.png", im)
+
+
+# """
+# fit line
+# """
+#
+# cnt = contours[0]
+# M = cv2.moments(cnt)
+# img = cv2.imread('tree3.jpg',0)
+# rows,cols = img.shape[:2]
+# [vx,vy,x,y] = cv2.fitLine(cnt, cv2.DIST_L2,0,0.01,0.01)
+# lefty = int((-x*vy/vx) + y)
+# righty = int(((cols-x)*vy/vx)+y)
+# cv2.line(img,(cols-1,righty),(0,lefty),(0,255,0),2)
+
+#
+# """
+# Hough Line Transformation
+# """
+#
+img = cv2.imread('tree2.jpg')
+gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+edges = cv2.Canny(gray,50,150,apertureSize = 3)
+minLineLength = 100
+maxLineGap = 10
+lines = cv2.HoughLinesP(edges,1,np.pi/180,100,minLineLength,maxLineGap)
+for x1,y1,x2,y2 in lines[0]:
+    cv2.line(img,(x1,y1),(x2,y2),(0,255,0),3)
+
+cv2.imwrite('houghlines5.jpg',img)
 
 
 
@@ -130,3 +175,39 @@ matches = sorted(matches, key = lambda x:x.distance)
 img3 = drawMatches(img1,kp1,img2,kp2,matches[:20])
 cv2.imwrite('matches.png',img3)
 # plt.imshow(img3),plt.show()
+
+
+"""
+train classifier
+"""
+
+# color = [0, 255, 0]
+# thickness   = 2
+# cascadeFile = './opencv-haar-classifier-training/trained_classifiers/tree_classifier.xml'
+#
+# for i in range(11):
+#     fileName = './opencv-haar-classifier-training/positive_images/pos'+str(i+1)+'.png'
+#     im = cv2.imread(fileName)
+#     trees = cv2.CascadeClassifier(cascadeFile)
+#     objects = trees.detectMultiScale(im, 1.3, 5)
+#     for (x, y, w, h) in objects:
+#         im = cv2.rectangle(im,(x,y),(x+w,y+h),(255,0,0),2)
+#     cv2.imshow('im',im)
+#     cv2.waitKey(0)
+#     cv2.destroyAllWindows()
+
+
+"""
+Sorbel
+http://www.jayrambhia.com/blog/sobel-operator/
+"""
+img = cv2.imread('clustered.png',0)
+img = cv2.blur(img,(7,7))
+dst = cv2.Sobel(img, ddepth=cv2.cv.CV_32F, dx=1, dy=0, ksize=1)
+minv = np.min(dst)
+maxv = np.max(dst)
+cscale = 255/(maxv-minv)
+shift =  -1*(minv)
+sobel_img = np.zeros(img.shape,dtype='uint8')
+sobel_img = cv2.convertScaleAbs(dst, sobel_img, cscale, shift/255.0)
+cv2.imwrite('sobel32fblur7.png',sobel_img)
