@@ -226,11 +226,11 @@ sobel_img = np.zeros(img.shape,dtype='uint8')
 sobel_img = cv2.convertScaleAbs(dst, sobel_img, cscale, shift/255.0)
 
 
-_r = float(len(sobel_img)) # get number of x values
+num_rows = float(len(sobel_img)) # get number of x values
 # sum along y axis
 vert_sum = np.sum(sobel_img,axis=0)
 # make it an average value (divide by # of x values)
-vert_sum = np.divide(vert_sum,_r)
+vert_sum = np.divide(vert_sum,num_rows)
 
 
 x = np.arange(0,len(vert_sum)) # for graphing
@@ -259,10 +259,14 @@ plt.ylabel("Average grayscale convolved with sine curve")
 # plt.plot(x,vert_sum,'g-',x,y_conv,'r-')
 plt.plot(x,y_conv,'b-',mins,[y_conv[x] for x in mins],'o')
 
+# plot lines over image where minima are
+img = cv2.imread(imgpath)
+for i in mins:
+    cv2.line(img,(i,0),(i,int(num_rows)),(255, 0, 0),3)
+
+cv2.imwrite('lines.png',img)
 
 plt.show()
-
-# cv2.imwrite('sobel.png',sobel_img)
 
 # laplacian = cv2.Laplacian(sobel_img,cv2.CV_64F)
 # cv2.imwrite('laplacian.png',laplacian)
