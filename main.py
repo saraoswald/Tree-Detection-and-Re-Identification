@@ -3,9 +3,10 @@
 import numpy as np
 import cv2
 from matplotlib import pyplot as plt
+from scipy.interpolate import spline
 
-img1 = cv2.imread('trunk.jpg',0)          # queryImage
-img2 = cv2.imread('tree2.jpg',0) # trainImage
+img1 = cv2.imread('tree2.jpg',0)          # queryImage
+img2 = cv2.imread('tree3.jpg',0) # trainImage
 
 
 """
@@ -89,7 +90,7 @@ Kmeans clustering
 """
 Image Segmentation
 """
-# gray = cv2.imread('treetrunk.jpg',0)
+# gray = cv2.imread('canny.png',0)
 # ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
 #
 # # noise removal
@@ -116,65 +117,56 @@ Image Segmentation
 # find contours
 # """
 #
-# im = cv2.imread('clustered.png')
+# im = cv2.imread('canny.png')
 # imgray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
 # ret,thresh = cv2.threshold(imgray,127,255,0)
 # contours, hierarchy = cv2.findContours(thresh,cv2.RETR_TREE,cv2.CHAIN_APPROX_SIMPLE)
-# cv2.drawContours(im,contours,-1,(0,255,0),0)
+# cv2.drawContours(im,contours,-1,(0,255,0),3)
 # cv2.imwrite("contours.png", im)
 
-
-# """
-# fit line
-# """
-#
-# cnt = contours[0]
-# M = cv2.moments(cnt)
-# img = cv2.imread('tree3.jpg',0)
-# rows,cols = img.shape[:2]
-# [vx,vy,x,y] = cv2.fitLine(cnt, cv2.DIST_L2,0,0.01,0.01)
-# lefty = int((-x*vy/vx) + y)
-# righty = int(((cols-x)*vy/vx)+y)
-# cv2.line(img,(cols-1,righty),(0,lefty),(0,255,0),2)
 
 #
 # """
 # Hough Line Transformation
 # """
 #
-img = cv2.imread('tree2.jpg')
-gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-edges = cv2.Canny(gray,50,150,apertureSize = 3)
-minLineLength = 100
-maxLineGap = 10
-lines = cv2.HoughLinesP(edges,1,np.pi/180,100,minLineLength,maxLineGap)
-for x1,y1,x2,y2 in lines[0]:
-    cv2.line(img,(x1,y1),(x2,y2),(0,255,0),3)
+# img = cv2.imread('tree2.jpg')
+# gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+# edges = cv2.Canny(gray,150,200,apertureSize = 3)
+# minLineLength = 500
+# maxLineGap = 10
+# lines = cv2.HoughLinesP(edges,1,np.pi/180,200,minLineLength,maxLineGap)
+# for x1,y1,x2,y2 in lines[0]:
+#     cv2.line(img,(x1,y1),(x2,y2),(0,255,0),2)
+#
+# cv2.imwrite('houghlines500.jpg',img)
 
-cv2.imwrite('houghlines5.jpg',img)
 
+"""
+SIFT feature detection
+"""
 
-
-# Initiate SIFT detector
-orb = cv2.ORB()
-
-# find the keypoints and descriptors with SIFT
-kp1, des1 = orb.detectAndCompute(img1,None)
-kp2, des2 = orb.detectAndCompute(img2,None)
-
-# create BFMatcher object
-bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
-
-# Match descriptors.
-matches = bf.match(des1,des2)
-
-# Sort them in the order of their distance.
-matches = sorted(matches, key = lambda x:x.distance)
-
-# Draw first 10 matches.
-img3 = drawMatches(img1,kp1,img2,kp2,matches[:20])
-cv2.imwrite('matches.png',img3)
-# plt.imshow(img3),plt.show()
+#
+# # Initiate SIFT detector
+# orb = cv2.ORB()
+#
+# # find the keypoints and descriptors with SIFT
+# kp1, des1 = orb.detectAndCompute(img1,None)
+# kp2, des2 = orb.detectAndCompute(img2,None)
+#
+# # create BFMatcher object
+# bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+#
+# # Match descriptors.
+# matches = bf.match(des1,des2)
+#
+# # Sort them in the order of their distance.
+# matches = sorted(matches, key = lambda x:x.distance)
+#
+# # Draw first 10 matches.
+# img3 = drawMatches(img1,kp1,img2,kp2,matches[:20])
+# cv2.imwrite('matches.png',img3)
+# # plt.imshow(img3),plt.show()
 
 
 """
@@ -198,16 +190,79 @@ train classifier
 
 
 """
-Sorbel
+Sobel
 http://www.jayrambhia.com/blog/sobel-operator/
 """
-img = cv2.imread('clustered.png',0)
-img = cv2.blur(img,(7,7))
-dst = cv2.Sobel(img, ddepth=cv2.cv.CV_32F, dx=1, dy=0, ksize=1)
+imgpath = 'tree2.jpg' # which image to do
+
+
+# get image, reshape
+img1 = cv2.imread(imgpath,0)
+Z = img1.reshape((-1,3))
+# convert to np.float32
+Z = np.float32(Z)
+
+# define criteria, number of clusters(K) and apply kmeans()
+criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+K = 2
+ret,label,center=cv2.kmeans(Z,K,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
+center = np.uint8(center)
+res = center[label.flatten()]
+res2 = res.reshape((img1.shape))
+gray = img1
+ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_BINARY_INV+cv2.THRESH_OTSU)
+
+
+# apply blur filter
+img = cv2.blur(res2,(1,1))
+
+# apply Sobel operator
+dst = cv2.Sobel(img, ddepth=cv2.cv.CV_8U, dx=1, dy=0, ksize=5)
 minv = np.min(dst)
 maxv = np.max(dst)
 cscale = 255/(maxv-minv)
 shift =  -1*(minv)
 sobel_img = np.zeros(img.shape,dtype='uint8')
 sobel_img = cv2.convertScaleAbs(dst, sobel_img, cscale, shift/255.0)
-cv2.imwrite('sobel32fblur7.png',sobel_img)
+
+
+_r = float(len(sobel_img)) # get number of x values
+# sum along y axis
+vert_sum = np.sum(sobel_img,axis=0)
+# make it an average value (divide by # of x values)
+vert_sum = np.divide(vert_sum,_r)
+
+
+x = np.arange(0,len(vert_sum)) # for graphing
+xnew = np.arange(0,len(vert_sum),50) # for smoothing
+#smooth
+y_smooth = spline(x, vert_sum, xnew)
+
+#make a sin curve 300px wide
+z = np.arange(0,300,1)
+def f(x):
+    return np.sin(x/90)*-15 + 25
+
+f = [f(i) for i in z] # make sine into an array
+
+# convolve sine and the vertical sum
+y_conv = np.convolve(vert_sum, f,'same')
+
+# detect local minima
+mins = (np.diff(np.sign(np.diff(y_conv))) > 0).nonzero()[0] + 1
+
+# graph
+plt.title("Tree candidates for "+imgpath)
+plt.xlabel("X Coordinate of pixels in image")
+plt.ylabel("Average grayscale convolved with sine curve")
+
+# plt.plot(x,vert_sum,'g-',x,y_conv,'r-')
+plt.plot(x,y_conv,'b-',mins,[y_conv[x] for x in mins],'o')
+
+
+plt.show()
+
+# cv2.imwrite('sobel.png',sobel_img)
+
+# laplacian = cv2.Laplacian(sobel_img,cv2.CV_64F)
+# cv2.imwrite('laplacian.png',laplacian)
