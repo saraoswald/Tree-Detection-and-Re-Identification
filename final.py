@@ -2,12 +2,7 @@ import numpy as np
 import cv2
 from matplotlib import pyplot as plt
 from scipy.interpolate import spline
-
-class Tree:
-    def __init__(self, image, topLeft, bottomRight):
-        self.image = image
-        self.topLeft = topLeft
-        self.bottomRight = bottomRight
+from tree import *
 
 def xCoordinates(sobel_img):
     num_rows = float(len(sobel_img)) # get number of x values
@@ -142,7 +137,6 @@ def draw_boxes(imgpath, tree):
     cv2.imwrite('boxes_'+imgpath,img)
 
 if __name__ == '__main__':
-
     img1, img2 = 'data/tree2.jpg', 'data/tree3.jpg'
 
     topLeft, bottomRight = find_trees(img1)
