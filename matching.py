@@ -61,7 +61,7 @@ def drawMatches(img1, kp1, img2, kp2, matches):
         # Draw a line in between the two points
         # thickness = 1
         # colour blue
-        cv2.line(out, (int(x1),int(y1)), (int(x2)+cols1,int(y2)), (255, 0, 0), 1)
+        cv2.line(out, (int(x1),int(y1)), (int(x2)+cols1,int(y2)), (255, 0, 0), 2)
 
     return out
 
@@ -88,11 +88,14 @@ if __name__ == '__main__':
     # clip the second image
     x1, y1 = topLeft
     x2, y2 = bottomRight
-    img2 = cv2.imread(imgpath2,0)
-    img2 = img2[y1:y2,x1:x2]
+    img2 = cv2.imread(imgpath2,0) # open image
+    img2 = img2[y1:y2,x1:x2] # clip image
 
-    # Initiate SIFT detector
-    orb = cv2.ORB()
+    """
+     Initiate SIFT detector
+     Source: http://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_feature2d/py_matcher/py_matcher.html
+    """
+    orb = cv2.ORB(50)
 
     # find the keypoints and descriptors with SIFT
     kp1, des1 = orb.detectAndCompute(img1,None)
@@ -107,6 +110,7 @@ if __name__ == '__main__':
     # Sort them in the order of their distance.
     matches = sorted(matches, key = lambda x:x.distance)
 
+    # print des1
     # Draw first 10 matches.
-    img3 = drawMatches(img1,kp1,img2,kp2,matches[:10])
+    img3 = drawMatches(img1,kp1,img2,kp2,matches)
     cv2.imwrite('matches.png',img3)
