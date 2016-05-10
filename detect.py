@@ -4,6 +4,22 @@ from matplotlib import pyplot as plt
 from scipy.interpolate import spline
 from tree import *
 
+"""
+detect.py
+
+Applies Kmeans, Sobel, and blurring techniques to find trees in two images
+
+"""
+
+
+"""
+xCoordinates
+Sums grayscale values of given images along y axis, smooths the data, and returns local minima
+
+Local minima correspond to x values of tree candidates
+"""
+
+
 def xCoordinates(sobel_img):
     num_rows = float(len(sobel_img)) # get number of x values
 
@@ -32,6 +48,12 @@ def xCoordinates(sobel_img):
     mins = (np.diff(np.sign(np.diff(y_conv))) > 0).nonzero()[0] + 1
 
     return mins
+
+"""
+yCoordinates
+
+performs same task as xCoordinates, but returns y values
+"""
 
 def yCoordinates(sobel_img):
     num_col = float(len(sobel_img[0])) #number of y values
@@ -62,7 +84,14 @@ def yCoordinates(sobel_img):
 
 
 """
-Sobel reference
+find_trees
+
+Given image path, reads image, performs Kmeans clustering, blur filtering, and Sobel operator
+Uses xCoordinates() and yCoordinates() to get tree candidates
+
+Returns two sets of x and y coordinates for likely position of tree in image
+
+source:
 http://www.jayrambhia.com/blog/sobel-operator/
 """
 
@@ -124,6 +153,16 @@ def find_trees(imgpath):
     # return coordinates of top left and top right points
     return (treeLocator[0][0],treeLocator[0][1]), (treeLocator[20][0],treeLocator[20][1])
 
+"""
+draw_boxes()
+
+input: image path and Tree object of tree candidate
+
+Plots lines on image
+
+returns image object
+"""
+
 def draw_boxes(imgpath, tree):
     x1, y1 = tree.topLeft
     x2, y2 = tree.bottomRight
@@ -137,15 +176,19 @@ def draw_boxes(imgpath, tree):
 
     return img
 
-if __name__ == '__main__':
-    img1, img2 = 'data/tree2.jpg', 'data/tree3.jpg'
 
+if __name__ == '__main__':
+    img1, img2 = 'data/tree2.jpg', 'data/tree3.jpg' # image paths
+
+    # create tree object for image 1
     topLeft, bottomRight = find_trees(img1)
     tree1 = Tree(img1, topLeft, bottomRight)
 
+    # create tree object for image 2
     topLeft, bottomRight = find_trees(img2)
     tree2 = Tree(img2, topLeft, bottomRight)
 
+    # draw boxes onto images
     img = draw_boxes(img1, tree1)
     img1 = img1.split('/')[1]
-    cv2.imwrite('boxes_'+img1,img)
+    cv2.imwrite('boxes_'+img1,img) # save to disk

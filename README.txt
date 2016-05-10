@@ -6,13 +6,11 @@ Group #2 Members:
 	Liu, Daren R (drl322)
 	Kim, Jaynes (jk3935)
 
-To execute project:
-	python main.py
+To execute project and obtain matches:
+	python matching.py
 
 Images Explanations:
 	- treeX.jpg images are pictures of trees in Washington Square Park from different angles, taken by Daren
-	- box.png & box_in_scene.png are from the feature mapping tutorial
-		+ https://opencv-python-tutroals.readthedocs.org/en/latest/py_tutorials/py_feature2d/py_matcher/py_matcher.html#matcher
 
 Dependences:
 	Python 2.7.11
