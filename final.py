@@ -17,8 +17,9 @@ def xCoordinates(sobel_img):
     #smooth
     y_smooth = spline(x, vert_sum, xnew)
 
-    #make a sin curve 300px wide
-    z = np.arange(0,300,1)
+    #make a sin curve 1/3 of the width of image
+    img_width, img_height = sobel_img.shape
+    z = np.arange(0,int(img_width/3),1)
     def f(x):
         return np.sin(x/90)*-15 + 25
 
@@ -43,8 +44,9 @@ def yCoordinates(sobel_img):
     ynew = np.arange(0, len(horiz_sum))
     x_smooth = spline(y, horiz_sum, ynew)
 
-    #make a sin curve 300px wide
-    z = np.arange(0,300,1)
+    #make a sin curve 1/3 of the height
+    img_width, img_height = sobel_img.shape
+    z = np.arange(0,int(img_height/3),1)
     def f(x):
         return np.sin(x/90)*-15 + 25
 
@@ -133,8 +135,7 @@ def draw_boxes(imgpath, tree):
     cv2.line(img,(x1,y2),(x2,y2),(255, 0, 0),3)
     cv2.line(img,(x2,y1),(x2,y2),(255, 0, 0),3)
 
-    imgpath = imgpath.split('/')[1]
-    cv2.imwrite('boxes_'+imgpath,img)
+    return img
 
 if __name__ == '__main__':
     img1, img2 = 'data/tree2.jpg', 'data/tree3.jpg'
@@ -145,4 +146,6 @@ if __name__ == '__main__':
     topLeft, bottomRight = find_trees(img2)
     tree2 = Tree(img2, topLeft, bottomRight)
 
-    draw_boxes(img1, tree1)
+    img = draw_boxes(img1, tree1)
+    img1 = img1.split('/')[1]
+    cv2.imwrite('boxes_'+img1,img)
